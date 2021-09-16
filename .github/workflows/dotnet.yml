@@ -10,7 +10,7 @@ on:
     paths:
       - "apis/poi/**"
   workflow_dispatch:
-  
+
 jobs:
   build:
 
@@ -65,7 +65,7 @@ jobs:
         app-name: 'openhackcaepoi'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_1855eeed0e204c6a91a220e6c81926b2 }}
-        images: '${{ secrets.ACR_REPO }}/${{ secrets.AzureAppService_ContainerUsername_3bca51d0867c4875ac3c62685ccbac28 }}/devopsoh/api-poi:${{ github.run_number }}'            
+        images: '${{ secrets.ACR_REPO }}/devopsoh/api-poi:${{ github.run_number }}'            
     - uses: actions/github-script@0.9.0
       if: failure()
       with:
