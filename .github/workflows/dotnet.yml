@@ -46,12 +46,26 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    env:
+      rg-name: openhackcaerg
+      app-name: openhackcaepoi
     environment:
       name: 'production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
     - uses: actions/checkout@v2
+    - name: Create tag
+      uses: actions/github-script@v3
+      with:
+        github-token: ${{ github.token }}
+        script: |
+            github.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/${{ github.run_number }}",
+              sha: context.sha
+            })
     - name: Docker login
       run: docker login ${{secrets.ACR_REPO}} -u ${{secrets.ACR_USER}} -p ${{secrets.ACR_PWD}}
     - name: Docker Build
@@ -65,7 +79,28 @@ jobs:
         app-name: 'openhackcaepoi'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_1855eeed0e204c6a91a220e6c81926b2 }}
-        images: '${{ secrets.ACR_REPO }}/devopsoh/api-poi:${{ github.run_number }}'            
+        images: '${{ secrets.ACR_REPO }}/devopsoh/api-poi:${{ github.run_number }}'
+    - name: Check Api is up
+      uses: cygnetdigital/wait_for_response@v2.0.0
+      with:
+        url: 'https://openhackcaepoi-staging.azurewebsites.net/api/poi'
+        responseCode: '200'
+        timeout: 60000
+        interval: 800
+    - name: Login via Azure CLI
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Swap staging slot into production
+      id: slot_swap
+      run: |
+        az webapp deployment slot swap -g ${{ env.rg-name }} -n ${{ env.app-name }} -s staging
+        url=$(az webapp show -g ${{ env.rg-name }} -n ${{ env.app-name }} --query "defaultHostName" -o tsv)
+        echo "::set-output name=url::http://$url"
+
+    - name: az cli logout
+      run: az logout
     - uses: actions/github-script@0.9.0
       if: failure()
       with:
