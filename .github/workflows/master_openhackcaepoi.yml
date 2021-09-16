@@ -13,7 +13,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
-      name: 'staging'
+      name: 'production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
@@ -22,6 +22,6 @@ jobs:
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'openhackcaepoi'
-        slot-name: 'staging'
+        slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_1855eeed0e204c6a91a220e6c81926b2 }}
         images: 'openhackcaeacr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_3bca51d0867c4875ac3c62685ccbac28 }}/devopsoh/api-poi:${{ github.sha }}'
