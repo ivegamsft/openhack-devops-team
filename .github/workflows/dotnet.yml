@@ -9,7 +9,8 @@ on:
     branches: [ master ]
     paths:
       - "apis/poi/**"
-
+  workflow_dispatch:
+  
 jobs:
   build:
 
@@ -45,6 +46,9 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    environment:
+      name: 'production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
     - uses: actions/checkout@v2
@@ -53,7 +57,15 @@ jobs:
     - name: Docker Build
       run: docker build -t "${{secrets.ACR_REPO}}/devopsoh/api-poi:${{ github.run_number }}" apis/poi/web
     - name: Docker Publish
-      run: docker push "${{secrets.ACR_REPO}}/devopsoh/api-poi:${{ github.run_number }}"      
+      run: docker push "${{secrets.ACR_REPO}}/devopsoh/api-poi:${{ github.run_number }}"
+    - name: Deploy to Azure Web App
+      id: deploy-to-webapp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'openhackcaepoi'
+        slot-name: 'production'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_1855eeed0e204c6a91a220e6c81926b2 }}
+        images: '${{ secrets.ACR_REPO }}/${{ secrets.AzureAppService_ContainerUsername_3bca51d0867c4875ac3c62685ccbac28 }}/devopsoh/api-poi:${{ github.run_number }}'            
     - uses: actions/github-script@0.9.0
       if: failure()
       with:
